@@ -23,7 +23,7 @@ if (fs.existsSync(indexPath)) {
 
   // 清除旧的增强脚本引用（如有），避免容器重启后重复插入
   html = html.replace(
-    /<script src="\/(cloud-(early-restore|save)|virtual-controls|pause-protect|mobile-font-baseline-fix)\.js[^"]*"><\/script>\n?\s*/g,
+    /<script src="\/(cloud-(early-restore|save)|virtual-controls|pause-protect)\.js[^"]*"><\/script>\n?\s*/g,
     ''
   );
 
