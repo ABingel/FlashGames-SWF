@@ -31,20 +31,72 @@
 - `/api/cloud-save/:code` 云存档 GET/PUT API
 - 存档持久化到宿主机挂载目录
 
-## 🚀 快速开始
+## 🚀 Docker Compose 一键部署
 
-### 基于 vue-flash 原始部署
+### 前提
+- 安装 [Docker](https://docs.docker.com/engine/install/) + [Docker Compose](https://docs.docker.com/compose/install/)
+- 准备好 `.swf` 游戏文件（放入 `./game/` 目录，可嵌套子文件夹）
 
-1. 按照 [vue-flash 文档](https://github.com/onRoadLookBeauty/vue-flash) 完成基础部署
-2. 将 `client-dist/` 下的文件部署到 `/app/client/dist/`
-3. 将 `server/routes/` 下的代码合并到服务端
-4. 在 `index.html` 中调整脚本加载顺序（参考 `docs/script-loading.md`）
-
-### 一键部署（Docker）
+### 部署步骤
 
 ```bash
-# 前提：已部署 vue-flash 基础 Docker 容器
-bash deploy/setup.sh
+# 1. 克隆仓库
+git clone https://github.com/ABingel/FlashGames-SWF.git
+cd FlashGames-SWF
+
+# 2. （可选）复制环境配置并修改管理密码
+cp .env.example .env
+# 编辑 .env，修改 ADMIN_PASSWORD
+
+# 3. 放入游戏文件到 ./game/ 目录
+# 支持 .swf 文件或嵌套子目录
+
+# 4. 启动（自动构建镜像 + 应用增强补丁）
+docker compose up -d
+
+# 5. 访问 http://localhost:3000
+```
+
+> 🎯 容器启动时会自动：
+> 1. 注入 `cloud-early-restore.js`（Ruffle 前加载）
+> 2. 注入 `cloud-save.js`（云端存档 UI）
+> 3. 注册云存档 API 路由
+> 4. 调整请求体大小限制（支持存档上传）
+> 5. 创建云存档持久化目录
+
+### 常用命令
+
+```bash
+# 查看日志
+docker compose logs -f
+
+# 重启
+docker compose restart
+
+# 停止
+docker compose down
+
+# 更新（重新构建镜像）
+git pull
+docker compose up -d --build
+```
+
+## 🛠 手动部署（已有 vue-flash 容器）
+
+如果已按 vue-flash 部署了容器，可以用 deploy/ 下的脚本逐个打补丁：
+
+```bash
+# 云端存档
+bash deploy/apply-flash-save-fix.sh
+
+# 修正脚本加载顺序
+bash deploy/fix-flash-early-restore.sh
+
+# 存档多 host/query 别名兼容
+bash deploy/patch-flash-save-query-alias.sh
+
+# 智能选择最长存档
+bash deploy/patch-flash-choose-longest-save.sh
 ```
 
 ## 📁 项目结构
@@ -57,16 +109,14 @@ FlashGames-SWF/
 ├── server/routes/             # 服务端增强
 │   └── cloud-save.js          # 云存档 API
 ├── deploy/                    # 部署/补丁脚本
-│   ├── apply-flash-save-fix.sh
-│   ├── fix-flash-early-restore.sh
-│   ├── patch-flash-save-query-alias.sh
-│   ├── patch-flash-choose-longest-save.sh
-│   ├── archive-cloud-saves-keep-one.sh
-│   ├── repair-cloud-save-keys.sh
-│   ├── patch-flash-localstorage-existing-query.sh
-│   └── setup.sh
 ├── docs/
 │   └── script-loading.md      # 脚本加载顺序说明
+├── Dockerfile                 # 基于 vue-flash 镜像扩展
+├── docker-compose.yml         # Docker Compose 一键部署
+├── entrypoint.sh              # 容器启动入口
+├── entrypoint-patch.js        # 启动时自动应用的补丁
+├── .env.example               # 环境变量示例
+├── .dockerignore
 └── README.md
 ```
 
