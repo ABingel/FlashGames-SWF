@@ -16,6 +16,7 @@ COPY client-dist/virtual-controls.js /app/client/dist/virtual-controls.js
 COPY client-dist/pause-protect.js /app/client/dist/pause-protect.js
 COPY fonts/DroidSansFallbackFull.ttf /app/client/dist/fonts/DroidSansFallbackFull.ttf
 COPY fonts/NotoSansSC-Regular.ttf /app/client/dist/fonts/NotoSansSC-Regular.ttf
+COPY fonts/NotoSerifSC-Regular.ttf /app/client/dist/fonts/NotoSerifSC-Regular.ttf
 
 # 复制云端存档服务端路由
 COPY server/routes/cloud-save.js /app/server/src/routes/cloud-save.js
