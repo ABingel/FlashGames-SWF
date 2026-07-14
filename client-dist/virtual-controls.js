@@ -117,7 +117,7 @@
   }
 
   function isGamePage() {
-    return /\/game\/\d+/.test(window.location.pathname) || !!document.querySelector('ruffle-player');
+    return /\/(?:game|play)\/\d+/.test(window.location.pathname) || !!document.querySelector('ruffle-player');
   }
 
   function keyInfo(code) {
@@ -448,12 +448,19 @@
     toggleBtn.type = 'button';
     toggleBtn.textContent = '🎮';
     toggleBtn.title = '显示/隐藏手机虚拟按键';
-    toggleBtn.onclick = function (ev) {
-      ev.preventDefault();
+    var lastToggleAt = 0;
+    function toggleVirtualKeys(ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var now = Date.now();
+      if (now - lastToggleAt < 300) return;
+      lastToggleAt = now;
       isEnabled = !isEnabled;
       localStorage.setItem('fg-vkeys-enabled', isEnabled ? '1' : '0');
       updateUi();
-    };
+    }
+    toggleBtn.onclick = toggleVirtualKeys;
+    toggleBtn.addEventListener('pointerup', toggleVirtualKeys, { passive: false });
+    toggleBtn.addEventListener('touchend', toggleVirtualKeys, { passive: false });
     document.body.appendChild(toggleBtn);
 
     saveBtn = document.createElement('button');
