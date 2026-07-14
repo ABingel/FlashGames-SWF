@@ -233,9 +233,13 @@
     return isVisible && (Date.now() < suppressBrowserMenuUntil || Object.keys(activeKeys).length > 0);
   }
 
-  function globalSuppressHandler(ev) {
+  function globalSuppressHandler(ev, stopFlow) {
     if (!shouldSuppressBrowserMenu()) return;
-    try { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); } catch (_) {}
+    try {
+      ev.preventDefault();
+      // pointer/touch 事件不能阻断传播，否则虚拟按键自身收不到按下事件；菜单/选择类事件才彻底拦截。
+      if (stopFlow) { ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }
+    } catch (_) {}
     return false;
   }
 
@@ -574,8 +578,8 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
     }); // fg-vkey-root-contextmenu-guard
 
     ['contextmenu','selectstart','dragstart','gesturestart'].forEach(function (name) {
-      document.addEventListener(name, globalSuppressHandler, true);
-      window.addEventListener(name, globalSuppressHandler, true);
+      document.addEventListener(name, function (ev) { return globalSuppressHandler(ev, true); }, true);
+      window.addEventListener(name, function (ev) { return globalSuppressHandler(ev, true); }, true);
     });
     ['touchstart','touchmove','touchend','touchcancel','pointerdown','pointermove','pointerup','pointercancel'].forEach(function (name) {
       document.addEventListener(name, function (ev) {
@@ -583,7 +587,7 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
         var inVkey = false;
         try { inVkey = !!(t && t.closest && t.closest('#fg-vkey-root,#fg-vkey-toggle,#fg-vkey-config-toggle,#fg-vkey-config-panel')); } catch (_) {}
         if (inVkey) suppressBrowserMenu(1600);
-        if (shouldSuppressBrowserMenu() && inVkey) globalSuppressHandler(ev);
+        if (shouldSuppressBrowserMenu() && inVkey) globalSuppressHandler(ev, false);
       }, { capture: true, passive: false });
     });
 
