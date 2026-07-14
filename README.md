@@ -2,53 +2,93 @@
 
 > **基于 [vue-flash](https://github.com/onRoadLookBeauty/vue-flash) 二改** — 感谢原项目作者 [@onRoadLookBeauty](https://github.com/onRoadLookBeauty)
 
-基于 Ruffle 的 Flash 游戏在线平台，无需插件，现代浏览器直接畅玩经典 SWF 游戏。本仓库在 vue-flash 基础上增加了可直接 Docker Compose 部署的云端存档增强层。
+一个可直接 Docker Compose 部署的 Flash 游戏站点项目。拉取本仓库后，放入 SWF 游戏文件，执行一条命令即可启动完整服务。
 
-## ✨ 新增/增强功能
+## ✨ 功能
 
-### ☁️ 云端存档系统
-- 支持 localStorage + IndexedDB 双存储同步
-- 唯一存档码，跨设备共享游戏进度
-- 手动上传/拉取，无自动同步（避免冲突）
-- 智能选择最长存档（解决多 host/query 别名冲突）
-- 支持 Ruffle Storage 和游戏自定义 SavedData
+- 基于 Ruffle，现代浏览器直接运行 Flash/SWF 游戏
+- 自动扫描 `game/` 目录中的 `.swf` 游戏文件
+- SQLite 数据和云存档持久化到 `data/` 目录
+- 云端存档系统：支持 localStorage + IndexedDB 同步
+- 存档码跨设备使用：手机上传，电脑拉取
+- 手动上传/拉取，避免自动同步覆盖存档
+- 启动时自动注入云存档脚本和服务端 API
 
-### 🐍 服务端增强
-- `/api/cloud-save/:code` 云存档 GET/PUT API
-- 存档持久化到宿主机挂载目录
+## 🚀 一键部署
 
-## 🚀 Docker Compose 一键部署
-
-### 前提
-- 安装 [Docker](https://docs.docker.com/engine/install/) + [Docker Compose](https://docs.docker.com/compose/install/)
-- 准备好 `.swf` 游戏文件（放入 `./game/` 目录，可嵌套子文件夹）
-
-### 部署步骤
+### 1. 克隆项目
 
 ```bash
 git clone https://github.com/ABingel/FlashGames-SWF.git
 cd FlashGames-SWF
+```
 
-# 可选：修改管理密码
-cp .env.example .env
+### 2. 放入游戏文件
 
-# 放入 .swf 游戏文件到 ./game/ 目录（支持子目录）
+把 `.swf` 游戏文件放到 `game/` 目录：
 
-# 一键启动
-# 自动拉取 vue-flash 基础镜像 → 叠加增强功能 → 启动
+```txt
+game/
+├── game1.swf
+├── game2.swf
+└── 冒险类/
+    └── xxx.swf
+```
+
+### 3. 启动
+
+```bash
 docker compose up -d
 ```
 
-打开 http://localhost:3000 即可使用 🎉
+访问：
 
-> 🎯 容器启动时会自动：
-> 1. 注入 `cloud-early-restore.js`（Ruffle 前加载）
-> 2. 注入 `cloud-save.js`（云端存档 UI）
-> 3. 注册云存档 API 路由
-> 4. 调整请求体大小限制（支持存档上传）
-> 5. 创建云存档持久化目录
+```txt
+http://localhost:3000
+```
 
-### 常用命令
+就可以用了。
+
+## 🔧 可选配置
+
+复制环境变量示例：
+
+```bash
+cp .env.example .env
+```
+
+修改 `.env` 里的管理密码：
+
+```env
+ADMIN_PASSWORD=你的密码
+```
+
+然后重启：
+
+```bash
+docker compose up -d --build
+```
+
+## 📁 目录说明
+
+```txt
+FlashGames-SWF/
+├── docker-compose.yml         # 一键部署配置
+├── Dockerfile                 # 基于 vue-flash 官方镜像叠加增强功能
+├── entrypoint.sh              # 容器启动入口
+├── entrypoint-patch.js        # 启动时自动注入云存档补丁
+├── game/                      # 放 SWF 游戏文件
+├── data/                      # 数据库和云存档持久化目录
+├── client-dist/               # 前端增强脚本
+│   ├── cloud-save.js
+│   └── cloud-early-restore.js
+├── server/routes/
+│   └── cloud-save.js          # 云存档 API
+├── deploy/                    # 历史补丁脚本
+└── docs/                      # 补充说明
+```
+
+## 🧰 常用命令
 
 ```bash
 # 查看日志
@@ -60,37 +100,14 @@ docker compose restart
 # 停止
 docker compose down
 
-# 更新（重新构建镜像）
+# 更新项目后重新构建
 git pull
 docker compose up -d --build
 ```
 
-
-
-## 📁 项目结构
-
-```
-FlashGames-SWF/
-├── client-dist/               # 前端文件（覆盖 vue-flash dist）
-│   ├── cloud-save.js          # 云端存档系统（含 UI）
-│   └── cloud-early-restore.js # 提前恢复脚本（Ruffle 前加载）
-├── server/routes/             # 服务端增强
-│   └── cloud-save.js          # 云存档 API
-├── deploy/                    # 历史部署/补丁脚本
-├── docs/
-│   └── script-loading.md      # 脚本加载顺序说明
-├── Dockerfile                 # 基于 vue-flash 镜像扩展
-├── docker-compose.yml         # Docker Compose 一键部署
-├── entrypoint.sh              # 容器启动入口
-├── entrypoint-patch.js        # 启动时自动应用的补丁
-├── .env.example               # 环境变量示例
-├── .dockerignore
-└── README.md
-```
-
 ## 📜 声明
 
-本项目基于 [vue-flash](https://github.com/onRoadLookBeauty/vue-flash)（MIT License）二次开发，所有新增功能遵循相同开源协议。
+本项目基于 [vue-flash](https://github.com/onRoadLookBeauty/vue-flash) 二次开发，感谢原项目作者。
 
 ## 📝 致谢
 

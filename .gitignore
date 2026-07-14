@@ -6,3 +6,9 @@ __pycache__/
 *.pyc
 .vscode/
 .idea/
+
+# 运行数据和游戏文件默认不提交，避免误传大文件/版权文件
+/data/*
+!/data/.gitkeep
+/game/*
+!/game/.gitkeep
