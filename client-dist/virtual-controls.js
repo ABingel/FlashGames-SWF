@@ -10,7 +10,6 @@
   var toggleBtn = null;
   var saveBtn = null;
   var configToolbarBtn = null;
-  var touchGuard = null;
   var activeKeys = Object.create(null);
   var suppressBrowserMenuUntil = 0;
   var pollTimer = null;
@@ -432,44 +431,12 @@
     return b;
   }
 
-  function ensureTouchGuard() {
-    if (touchGuard || document.getElementById('fg-touch-guard')) {
-      touchGuard = document.getElementById('fg-touch-guard');
-      return touchGuard;
-    }
-    touchGuard = document.createElement('div');
-    touchGuard.id = 'fg-touch-guard';
-    touchGuard.setAttribute('aria-hidden', 'true');
-    try {
-      touchGuard.style.webkitTouchCallout = 'none';
-      touchGuard.style.webkitUserSelect = 'none';
-      touchGuard.style.userSelect = 'none';
-      touchGuard.style.touchAction = 'none';
-      touchGuard.style.webkitTapHighlightColor = 'transparent';
-    } catch (_) {}
-    function block(ev) {
-      try {
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-      } catch (_) {}
-      return false;
-    }
-    ['contextmenu','selectstart','dragstart','gesturestart','touchstart','touchmove','touchend','touchcancel','pointerdown','pointermove','pointerup','pointercancel','mousedown','mouseup','click'].forEach(function (name) {
-      touchGuard.addEventListener(name, block, { passive: false });
-    });
-    document.body.appendChild(touchGuard);
-    return touchGuard;
-  }
-
   function createStyles() {
     if (document.getElementById('fg-vkeys-style')) return;
     var style = document.createElement('style');
     style.id = 'fg-vkeys-style';
     style.textContent = '\
 html.fg-game-no-callout,body.fg-game-no-callout,body.fg-game-no-callout *{-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important;}\
-#fg-touch-guard{position:fixed;inset:0;z-index:99995;display:none;background:transparent!important;touch-action:none!important;-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important;}\
-body.fg-vkey-touchguard-on #fg-touch-guard{display:block;}\
 #fg-vkey-config-toggle{position:fixed;right:120px;top:calc(env(safe-area-inset-top,0px) + 72px);bottom:auto;z-index:99998;width:46px;height:46px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,42,.72);color:#fff;font-size:21px;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}\
 #fg-vkey-toggle{position:fixed;right:66px;top:calc(env(safe-area-inset-top,0px) + 72px);bottom:auto;z-index:99997;width:46px;height:46px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,42,.72);color:#fff;font-size:21px;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}\
 #fg-pause-btn{right:174px!important;top:calc(env(safe-area-inset-top,0px) + 72px)!important;bottom:auto!important;width:46px!important;height:46px!important;z-index:99999!important;background:rgba(15,23,42,.72)!important;border:1px solid rgba(255,255,255,.25)!important;box-shadow:0 4px 16px rgba(0,0,0,.28)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;font-size:21px!important;}\
@@ -652,7 +619,6 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
 
     root.appendChild(dpad);
     root.appendChild(actions);
-    ensureTouchGuard();
     document.body.appendChild(root);
     installGamePageLongPressGuard();
     ['contextmenu','selectstart','dragstart'].forEach(function (name) {
@@ -691,7 +657,6 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
     refreshActionLabels();
     if (!shouldShowToggle || !isEnabled) {
       root.classList.remove('fg-vkey-show');
-      try { document.body.classList.remove('fg-vkey-touchguard-on'); } catch (_) {}
       isVisible = false;
       releaseAll();
       return;
