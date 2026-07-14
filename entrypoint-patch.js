@@ -23,14 +23,14 @@ if (fs.existsSync(indexPath)) {
 
   // 清除旧的增强脚本引用（如有），避免容器重启后重复插入
   html = html.replace(
-    /<script src="\/(cloud-(early-restore|save)|virtual-controls|pause-protect)\.js[^"]*"><\/script>\n?\s*/g,
+    /<script src="\/(cloud-(early-restore|save)|virtual-controls|pause-protect|mobile-font-baseline-fix)\.js[^"]*"><\/script>\n?\s*/g,
     ''
   );
 
   if (html.includes('<script src="/ruffle/ruffle.js"></script>')) {
     html = html.replace(
       '<script src="/ruffle/ruffle.js"></script>',
-      `<script src="/cloud-early-restore.js?v=${assetVersion}"></script>\n  <script src="/ruffle/ruffle.js"></script>`
+      `<script src="/cloud-early-restore.js?v=${assetVersion}"></script>\n  <script src="/mobile-font-baseline-fix.js?v=${assetVersion}"></script>\n  <script src="/ruffle/ruffle.js"></script>`
     );
   } else {
     console.warn('[patch] 未找到 ruffle.js 标签，cloud-early-restore 未插入');

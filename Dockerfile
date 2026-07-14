@@ -14,6 +14,7 @@ COPY client-dist/cloud-save.js /app/client/dist/cloud-save.js
 COPY client-dist/cloud-early-restore.js /app/client/dist/cloud-early-restore.js
 COPY client-dist/virtual-controls.js /app/client/dist/virtual-controls.js
 COPY client-dist/pause-protect.js /app/client/dist/pause-protect.js
+COPY client-dist/mobile-font-baseline-fix.js /app/client/dist/mobile-font-baseline-fix.js
 COPY fonts/DroidSansFallbackFull.ttf /app/client/dist/fonts/DroidSansFallbackFull.ttf
 COPY fonts/NotoSansSC-Regular.ttf /app/client/dist/fonts/NotoSansSC-Regular.ttf
 
