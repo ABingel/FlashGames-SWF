@@ -16,16 +16,27 @@
 
 ## 🚀 一键部署
 
-### 1. 克隆项目
+现在部署方式和原 vue-flash 一样：只需要一个 `docker-compose.yml`。
+
+### 1. 新建目录
 
 ```bash
-git clone https://github.com/ABingel/FlashGames-SWF.git
+mkdir FlashGames-SWF
 cd FlashGames-SWF
+mkdir -p game data
 ```
 
-### 2. 放入游戏文件
+### 2. 下载 docker-compose.yml
 
-把 `.swf` 游戏文件放到 `game/` 目录：
+```bash
+curl -O https://raw.githubusercontent.com/ABingel/FlashGames-SWF/master/docker-compose.yml
+```
+
+如果没有 `curl`，也可以直接从 GitHub 复制 `docker-compose.yml` 内容到本地。
+
+### 3. 放入游戏文件
+
+把 `.swf` 游戏放到 `game/` 目录：
 
 ```txt
 game/
@@ -35,7 +46,7 @@ game/
     └── xxx.swf
 ```
 
-### 3. 启动
+### 4. 启动
 
 ```bash
 docker compose up -d
@@ -44,10 +55,16 @@ docker compose up -d
 访问：
 
 ```txt
-http://localhost:3000
+http://服务器IP:3000
 ```
 
-就可以用了。
+例如：
+
+```txt
+http://192.168.31.99:3000
+```
+
+> 首次运行会自动拉取 `ghcr.io/abingel/flash-games-swf:latest` 镜像，不需要本地构建。
 
 ## 🔧 可选配置
 
@@ -73,8 +90,8 @@ docker compose up -d --build
 
 ```txt
 FlashGames-SWF/
-├── docker-compose.yml         # 一键部署配置
-├── Dockerfile                 # 基于 vue-flash 官方镜像叠加增强功能
+├── docker-compose.yml         # 一键部署配置（直接拉取 GHCR 镜像）
+├── Dockerfile                 # 镜像构建文件（由 GitHub Actions 自动构建）
 ├── entrypoint.sh              # 容器启动入口
 ├── entrypoint-patch.js        # 启动时自动注入云存档补丁
 ├── game/                      # 放 SWF 游戏文件

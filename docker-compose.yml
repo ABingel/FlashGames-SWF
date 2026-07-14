@@ -1,6 +1,6 @@
 services:
   flash-games:
-    build: .
+    image: ghcr.io/abingel/flash-games-swf:latest
     container_name: flash-games-swf
     ports:
       - "3000:3000"
