@@ -108,7 +108,7 @@
       if (btn) {
         var code = slotCode(slot);
         btn.textContent = codeLabel(code);
-        btn.title = slot.name + '：' + codeLabel(code) + '（双点锁定长按）';
+        btn.title = slot.name + '：' + codeLabel(code) + '（点击短按）';
       }
     });
   }
@@ -328,9 +328,6 @@
       return;
     }
 
-    var lastTapAt = 0;
-    var locked = false;
-    var codeForLock = null;
     var tapTimer = null;
 
     function currentCode() {
@@ -346,46 +343,20 @@
       clearTimeout(tapTimer);
       tapTimer = setTimeout(function () { release(code); }, 140);
     }
-    function lockPress(code) {
-      locked = true;
-      codeForLock = code;
-      el.classList.add('fg-vkey-active', 'fg-vkey-locked');
-      press(code);
-    }
-    function unlockPress() {
-      locked = false;
-      el.classList.remove('fg-vkey-active', 'fg-vkey-locked');
-      if (codeForLock) release(codeForLock);
-      codeForLock = null;
-    }
     function handleTap(ev) {
       prevent(ev);
-      var now = Date.now();
       var code = currentCode();
-      if (locked) {
-        unlockPress();
-        lastTapAt = 0;
-        return;
-      }
-      if (now - lastTapAt < 420) {
-        clearTimeout(tapTimer);
-        lockPress(code);
-        lastTapAt = 0;
-        return;
-      }
-      lastTapAt = now;
       el.classList.add('fg-vkey-active');
       shortPress(code);
-      setTimeout(function () { if (!locked) el.classList.remove('fg-vkey-active'); }, 160);
+      setTimeout(function () { el.classList.remove('fg-vkey-active'); }, 160);
     }
 
-    // 新交互：单点=短按；连续点两次=锁定长按；锁定后再点一次=释放。
-    // 这样避免手机浏览器因手指长时间按住屏幕而弹出系统菜单。
+    // 动作/技能键：点击=短按；双击也只是两次短按，不再锁定长按。
     if (window.PointerEvent) {
       el.addEventListener('pointerdown', function (ev) { prevent(ev); focusPlayer(); }, { passive: false });
       el.addEventListener('pointerup', handleTap, { passive: false });
-      el.addEventListener('pointercancel', function (ev) { prevent(ev); if (!locked) el.classList.remove('fg-vkey-active'); }, { passive: false });
-      el.addEventListener('pointerleave', function (ev) { if (!locked) el.classList.remove('fg-vkey-active'); }, { passive: false });
+      el.addEventListener('pointercancel', function (ev) { prevent(ev); el.classList.remove('fg-vkey-active'); }, { passive: false });
+      el.addEventListener('pointerleave', function (ev) { el.classList.remove('fg-vkey-active'); }, { passive: false });
     } else {
       el.addEventListener('touchstart', function (ev) { prevent(ev); focusPlayer(); }, { passive: false });
       el.addEventListener('touchend', handleTap, { passive: false });
@@ -494,7 +465,7 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
   function makeActionBtn(slot) {
     var b = makeBtn(codeLabel(slotCode(slot)), slot.cls, function () { return slotCode(slot); }, slot.name);
     b.dataset.fgSlot = slot.id;
-    b.title = slot.name + '：' + codeLabel(slotCode(slot)) + '（双点锁定长按）';
+    b.title = slot.name + '：' + codeLabel(slotCode(slot)) + '（点击短按）';
     return b;
   }
 
