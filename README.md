@@ -40,22 +40,20 @@
 ### 部署步骤
 
 ```bash
-# 1. 克隆仓库
 git clone https://github.com/ABingel/FlashGames-SWF.git
 cd FlashGames-SWF
 
-# 2. （可选）复制环境配置并修改管理密码
+# 可选：修改管理密码
 cp .env.example .env
-# 编辑 .env，修改 ADMIN_PASSWORD
 
-# 3. 放入游戏文件到 ./game/ 目录
-# 支持 .swf 文件或嵌套子目录
+# 放入 .swf 游戏文件到 ./game/ 目录（支持子目录）
 
-# 4. 启动（自动构建镜像 + 应用增强补丁）
+# 一键启动
+# 自动拉取 vue-flash 基础镜像 → 叠加增强功能 → 启动
 docker compose up -d
-
-# 5. 访问 http://localhost:3000
 ```
+
+打开 http://localhost:3000 即可使用 🎉
 
 > 🎯 容器启动时会自动：
 > 1. 注入 `cloud-early-restore.js`（Ruffle 前加载）
@@ -81,23 +79,7 @@ git pull
 docker compose up -d --build
 ```
 
-## 🛠 手动部署（已有 vue-flash 容器）
 
-如果已按 vue-flash 部署了容器，可以用 deploy/ 下的脚本逐个打补丁：
-
-```bash
-# 云端存档
-bash deploy/apply-flash-save-fix.sh
-
-# 修正脚本加载顺序
-bash deploy/fix-flash-early-restore.sh
-
-# 存档多 host/query 别名兼容
-bash deploy/patch-flash-save-query-alias.sh
-
-# 智能选择最长存档
-bash deploy/patch-flash-choose-longest-save.sh
-```
 
 ## 📁 项目结构
 

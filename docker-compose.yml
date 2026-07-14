@@ -1,9 +1,6 @@
-version: "3.8"
-
 services:
   flash-games:
     build: .
-    image: abingel/flash-games-swf:latest
     container_name: flash-games-swf
     ports:
       - "3000:3000"
@@ -15,6 +12,4 @@ services:
     environment:
       # 管理密码（部署前务必修改）
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-flash2024}
-      # 云存档目录（默认在 data 卷内）
-      - CLOUD_SAVE_DIR=/app/data/cloud-saves
     restart: unless-stopped
