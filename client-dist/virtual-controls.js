@@ -697,6 +697,7 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
       return;
     }
     root.classList.add('fg-vkey-show');
+    try { document.body.classList.add('fg-vkey-touchguard-on'); } catch (_) {}
     isVisible = true;
   }
 
