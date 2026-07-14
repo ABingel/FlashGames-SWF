@@ -16,6 +16,7 @@ COPY client-dist/virtual-controls.js /app/client/dist/virtual-controls.js
 
 # 复制云端存档服务端路由
 COPY server/routes/cloud-save.js /app/server/src/routes/cloud-save.js
+COPY server/routes/swf-resource-proxy.js /app/server/src/routes/swf-resource-proxy.js
 
 # 复制启动补丁脚本
 COPY entrypoint-patch.js /app/entrypoint-patch.js

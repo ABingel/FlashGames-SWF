@@ -46,36 +46,42 @@ if (fs.existsSync(indexPath)) {
   console.warn('[patch] index.html 未找到，跳过');
 }
 
-// ========== 3. 补丁 server index.js：注册云存档路由 ==========
+// ========== 3. 补丁 server index.js：注册增强路由 ==========
 const serverIndex = path.join(SERVER_SRC, 'index.js');
 if (fs.existsSync(serverIndex)) {
   let js = fs.readFileSync(serverIndex, 'utf8');
 
-  if (!js.includes("./routes/cloud-save.js")) {
-    const importLine = "import cloudSaveRouter from './routes/cloud-save.js'";
+  function addImport(importLine, markerText) {
+    if (js.includes(markerText)) return;
     const lastImportMatch = [...js.matchAll(/^import .*$/gm)].pop();
     if (lastImportMatch) {
       const pos = lastImportMatch.index + lastImportMatch[0].length;
       js = js.slice(0, pos) + '\n' + importLine + js.slice(pos);
-      console.log('[patch] server index.js ✓ 已添加 cloud-save import');
     } else {
-      console.warn('[patch] server index.js 未找到 import 区域，无法自动添加云存档路由');
+      console.warn('[patch] server index.js 未找到 import 区域，无法自动添加:', importLine);
     }
   }
 
-  if (!js.includes("app.use('/api', cloudSaveRouter)")) {
-    const spaMarker = '// ============ SPA fallback ============';
-    if (js.includes(spaMarker) && js.includes('cloudSaveRouter')) {
-      js = js.replace(
-        spaMarker,
-        "// 云存档 API\napp.use('/api', cloudSaveRouter)\n\n" + spaMarker
-      );
-      console.log('[patch] server index.js ✓ 已注册云存档路由');
+  addImport("import cloudSaveRouter from './routes/cloud-save.js'", './routes/cloud-save.js');
+  addImport("import swfResourceProxy from './routes/swf-resource-proxy.js'", './routes/swf-resource-proxy.js');
+
+  const spaMarker = '// ============ SPA fallback ============';
+  if (js.includes(spaMarker)) {
+    const inserts = [];
+    if (!js.includes("app.use('/api', cloudSaveRouter)")) {
+      inserts.push("// 云存档 API\napp.use('/api', cloudSaveRouter)");
+    }
+    if (!js.includes('app.use(swfResourceProxy)')) {
+      inserts.push("// SWF 相对资源兼容代理\napp.use(swfResourceProxy)");
+    }
+    if (inserts.length) {
+      js = js.replace(spaMarker, inserts.join('\n\n') + '\n\n' + spaMarker);
+      console.log('[patch] server index.js ✓ 已注册增强路由');
     } else {
-      console.warn('[patch] 未找到 SPA fallback 标记或 cloudSaveRouter，跳过路由注册');
+      console.log('[patch] server index.js ✓ 增强路由已注册，跳过');
     }
   } else {
-    console.log('[patch] server index.js ✓ 云存档路由已注册，跳过');
+    console.warn('[patch] 未找到 SPA fallback 标记，跳过路由注册');
   }
 
   // 如果 body 限制还是 1mb，改为 10mb
