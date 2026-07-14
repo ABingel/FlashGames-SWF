@@ -373,7 +373,6 @@
 .fg-vkey-config-actions{margin-top:12px;text-align:right;}\
 .fg-vkey-config-actions button{margin-left:8px;border:0;border-radius:9px;background:#334155;color:#fff;padding:8px 10px;}\
 .fg-vkey-mode{left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:999px;font-size:12px;color:rgba(255,255,255,.88);}\
-@media (min-width:901px) and (pointer:fine){#fg-vkey-root{display:none!important;}}\
 @media (max-width:520px){#fg-pause-btn{right:162px!important;}#fg-vkey-config-toggle{right:112px!important;}#fg-save-btn{display:none!important;}#fg-vkey-toggle{right:62px!important;}#fg-cloud-btn{right:12px!important;}#fg-pause-btn,#fg-vkey-toggle,#fg-vkey-config-toggle,#fg-cloud-btn{top:calc(env(safe-area-inset-top,0px) + 72px)!important;width:42px!important;height:42px!important;font-size:19px!important;}.fg-vkey-dpad{transform:scale(.86);transform-origin:left bottom;}.fg-vkey-actions{transform:scale(.86);transform-origin:right bottom;right:4px;}.fg-vkey{background:rgba(0,0,0,.42);}}\
 ';
     document.head.appendChild(style);
