@@ -11,6 +11,7 @@
   var saveBtn = null;
   var configToolbarBtn = null;
   var activeKeys = Object.create(null);
+  var suppressBrowserMenuUntil = 0;
   var pollTimer = null;
   var keyKeepAliveTimer = null;
 
