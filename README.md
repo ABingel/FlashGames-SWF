@@ -2,7 +2,7 @@
 
 > **基于 [vue-flash](https://github.com/onRoadLookBeauty/vue-flash) 二改** — 感谢原项目作者 [@onRoadLookBeauty](https://github.com/onRoadLookBeauty)
 
-基于 Ruffle 的 Flash 游戏在线平台，无需插件，现代浏览器直接畅玩经典 SWF 游戏。本仓库在 vue-flash 基础上做了多项增强和修复。
+基于 Ruffle 的 Flash 游戏在线平台，无需插件，现代浏览器直接畅玩经典 SWF 游戏。本仓库在 vue-flash 基础上增加了可直接 Docker Compose 部署的云端存档增强层。
 
 ## ✨ 新增/增强功能
 
@@ -12,20 +12,6 @@
 - 手动上传/拉取，无自动同步（避免冲突）
 - 智能选择最长存档（解决多 host/query 别名冲突）
 - 支持 Ruffle Storage 和游戏自定义 SavedData
-
-### 📱 手机虚拟按键
-- 可自定义动作键映射（J/K/L/U/I/O/Space/WASD/方向键等）
-- 双击锁定长按模式，适配触屏操作
-- 按住菜单/选择文本拦截
-- 按键配置按游戏保存，随云存档恢复
-
-### 🐛 Ruffle 中文字体渲染修复
-- 内置 DroidSansFallbackFull 字体
-- 宋体/黑体/微软雅黑 → Droid Sans Fallback 映射
-
-### ⏸️ 暂停保护
-- 长按菜单拦截（contextmenu/selectstart/dragstart）
-- 手机浏览器兼容优化
 
 ### 🐍 服务端增强
 - `/api/cloud-save/:code` 云存档 GET/PUT API
@@ -90,7 +76,7 @@ FlashGames-SWF/
 │   └── cloud-early-restore.js # 提前恢复脚本（Ruffle 前加载）
 ├── server/routes/             # 服务端增强
 │   └── cloud-save.js          # 云存档 API
-├── deploy/                    # 部署/补丁脚本
+├── deploy/                    # 历史部署/补丁脚本
 ├── docs/
 │   └── script-loading.md      # 脚本加载顺序说明
 ├── Dockerfile                 # 基于 vue-flash 镜像扩展

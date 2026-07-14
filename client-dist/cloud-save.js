@@ -2,11 +2,11 @@
 (function () {
  'use strict';
 
- var CODE_KEY = '***';
- var LAST_HASH_KEY = 'fgClou…Hash';
- var RELOAD_PROMPT_HASH_KEY = 'fgClou…Hash';
+ var CODE_KEY = 'fgCloudSaveCode';
+ var LAST_HASH_KEY = 'fgCloudLastHash';
+ var RELOAD_PROMPT_HASH_KEY = 'fgCloudReloadPromptHash';
  var API_BASE = '/api/cloud-save';
- var PENDING_RESTORE_KEY = 'fgClou…reV1';
+ var PENDING_RESTORE_KEY = 'fgCloudPendingRestore';
  var AUTO_SYNC_MS = 30000;
  var autoTimer = null;
  var busy = false;
@@ -22,10 +22,7 @@
  function addHost(h) { if (h && hosts.indexOf(h) < 0) hosts.push(h); }
  addHost(location.host);
  addHost(location.hostname);
- addHost('192.168.31.99');
- addHost('192.168.31.99:3000');
- addHost('fg.223727.xyz');
- return hosts;
+  return hosts;
  }
 
  function earlyNormalizeRestoreLocalStorage(obj) {
@@ -126,10 +123,7 @@
  function addHost(h) { if (h && hosts.indexOf(h) < 0) hosts.push(h); }
  addHost(location.host);
  addHost(location.hostname);
- addHost('192.168.31.99');
- addHost('192.168.31.99:3000');
- addHost('fg.223727.xyz');
- return hosts;
+  return hosts;
  }
 
  function groupSavedDataKeys(obj) {
