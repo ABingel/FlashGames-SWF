@@ -16,8 +16,6 @@
 
 ## 🚀 一键部署
 
-现在部署方式和原 vue-flash 一样：只需要一个 `docker-compose.yml`。
-
 ### 1. 新建目录
 
 ```bash
