@@ -32,12 +32,12 @@ router.get('/cloud-save/:code', (req, res) => {
 
   const filePath = savePath(code)
   if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'Save not found' })
+    return res.status(404).json({ exists: false, error: 'Save not found' })
   }
 
   try {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
-    res.json(data)
+    res.json({ exists: true, ...data })
   } catch (e) {
     console.error('Failed to read cloud save:', e)
     res.status(500).json({ error: 'Failed to read save' })
