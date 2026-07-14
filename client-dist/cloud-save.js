@@ -202,12 +202,27 @@
 
  function restoreLocalStorage(obj) {
  if (!obj || typeof obj !== 'object') return 0;
+ var existingByCanonical = {};
+ try {
+ for (var i = localStorage.length - 1; i >= 0; i--) {
+ var existingKey = localStorage.key(i);
+ if (!existingKey || !/\/game\/.*\/game\.swf(?:\?.*)?\/SavedData$/.test(existingKey)) continue;
+ var existingMatch = existingKey.match(/^(.*?)(\/game\/.*\/game\.swf(?:\?.*)?\/SavedData)$/);
+ if (!existingMatch) continue;
+ var existingCanonical = existingMatch[2].replace(/game\.swf\?[^/]+\/SavedData$/, 'game.swf/SavedData');
+ (existingByCanonical[existingCanonical] || (existingByCanonical[existingCanonical] = [])).push(existingKey);
+ }
+ } catch (_) {}
  normalizeSavedDataForRestore(obj);
  Object.keys(obj).forEach(function (key) {
  if (!/\/game\/.*\/game\.swf(?:\?.*)?\/SavedData$/.test(key)) return;
  var m = key.match(/^(.*?)(\/game\/.*\/game\.swf(?:\?.*)?\/SavedData)$/);
  if (!m) return;
  var canonicalPath = m[2].replace(/game\.swf\?[^/]+\/SavedData$/, 'game.swf/SavedData');
+ var value = obj[key];
+ (existingByCanonical[canonicalPath] || []).forEach(function (existingKey) {
+ if (obj[existingKey] !== value) obj[existingKey] = value;
+ });
  try {
  for (var i = localStorage.length - 1; i >= 0; i--) {
  var k = localStorage.key(i);
