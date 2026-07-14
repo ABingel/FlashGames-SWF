@@ -262,6 +262,18 @@
       document.addEventListener(name, blockPageMenu, true);
       window.addEventListener(name, blockPageMenu, true);
     });
+    // 很多手机/微信 WebView 的长按菜单不是等 contextmenu 才决定，而是在 touchstart/touchmove 阶段开始计时。
+    // 这里全局 preventDefault，但不阻断传播，避免再次把虚拟按键自己的事件拦掉。
+    ['touchstart','touchmove','pointerdown','pointermove'].forEach(function (name) {
+      document.addEventListener(name, function (ev) {
+        if (!isGamePage()) return;
+        var t = ev.target;
+        try {
+          if (t && t.closest && t.closest('#fg-vkey-config-panel,input,textarea,select')) return;
+        } catch (_) {}
+        try { ev.preventDefault(); } catch (_) {}
+      }, { capture: true, passive: false });
+    });
   }
 
   function effectiveMoveMode() {
