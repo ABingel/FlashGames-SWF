@@ -174,7 +174,9 @@
     add(player);
     if (player && player.shadowRoot) {
       add(player.shadowRoot);
-      var nodes = player.shadowRoot.querySelectorAll('canvas, .player, [tabindex], object, embed');
+      add(player.shadowRoot.getElementById('container'));
+      add(player.shadowRoot.getElementById('virtual-keyboard'));
+      var nodes = player.shadowRoot.querySelectorAll('#container, #container *, canvas, .player, [tabindex], object, embed');
       for (var i = 0; i < nodes.length; i++) add(nodes[i]);
     }
     add(document.body);
