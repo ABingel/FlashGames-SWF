@@ -11,6 +11,20 @@
     return out;
   }
 
+  function fgChooseBestSavedDataValue(items) {
+    var best = null;
+    (items || []).forEach(function (it) {
+      var v = it && it.value;
+      if (!v) return;
+      if (!best || String(v).length > String(best).length) best = v;
+    });
+    if (best) return best;
+    var counts = {}, sourceValue = null, sourceCount = -1;
+    (items || []).forEach(function (it) { if (it.value) counts[it.value] = (counts[it.value] || 0) + 1; });
+    Object.keys(counts).forEach(function (val) { if (counts[val] > sourceCount) { sourceValue = val; sourceCount = counts[val]; } });
+    return sourceValue;
+  }
+
   function normalize(ls) {
     if (!ls || typeof ls !== 'object') return ls;
     var hs = hosts();
@@ -23,10 +37,7 @@
       (groups[canonicalPath] || (groups[canonicalPath] = [])).push({ key: key, value: ls[key] });
     });
     Object.keys(groups).forEach(function (canonicalPath) {
-      var counts = {}, sourceValue = null, sourceCount = -1;
-      groups[canonicalPath].forEach(function (it) { if (it.value) counts[it.value] = (counts[it.value] || 0) + 1; });
-      Object.keys(counts).forEach(function (val) { if (counts[val] > sourceCount) { sourceValue = val; sourceCount = counts[val]; } });
-      if (!sourceValue && groups[canonicalPath][0]) sourceValue = groups[canonicalPath][0].value;
+      var sourceValue = fgChooseBestSavedDataValue(groups[canonicalPath]);
       if (!sourceValue) return;
       try {
         for (var i = localStorage.length - 1; i >= 0; i--) {

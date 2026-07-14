@@ -140,6 +140,30 @@
  return groups;
  }
 
+
+ function fgChooseBestSavedDataValue(items) {
+ var best = null;
+ (items || []).forEach(function (it) {
+ var v = it && it.value;
+ if (!v) return;
+ // 同一游戏可能出现多个 Ruffle SavedData key；通常更完整/更新的存档内容更长。
+ if (!best || String(v).length > String(best).length) best = v;
+ });
+ if (best) return best;
+ var counts = {}, sourceValue = null, sourceCount = -1;
+ (items || []).forEach(function (it) { if (it.value) counts[it.value] = (counts[it.value] || 0) + 1; });
+ Object.keys(counts).forEach(function (val) { if (counts[val] > sourceCount) { sourceValue = val; sourceCount = counts[val]; } });
+ return sourceValue;
+ }
+
+ function fgSavedDataPathVariants(canonicalPath, items) {
+ var out = [];
+ function add(p) { if (p && out.indexOf(p) < 0) out.push(p); }
+ add(canonicalPath);
+ (items || []).forEach(function (it) { add(it && it.path); });
+ return out;
+ }
+
  function normalizeSavedDataForUpload(obj) {
  if (!obj || typeof obj !== 'object') return 0;
  var hosts = getSavedDataHosts();
@@ -147,17 +171,12 @@
  var groups = groupSavedDataKeys(obj);
  Object.keys(groups).forEach(function (canonicalPath) {
  var items = groups[canonicalPath];
- var source = null;
- [location.host, location.hostname].some(function (h) {
- source = items.find(function (it) { return it.host === h && it.value; });
- return !!source;
- });
- if (!source) source = items.find(function (it) { return it.value; });
- if (!source) return;
+ var sourceValue = fgChooseBestSavedDataValue(items);
+ if (!sourceValue) return;
  hosts.forEach(function (h) {
- [canonicalPath, source.path].forEach(function (pathPart) {
+ fgSavedDataPathVariants(canonicalPath, items).forEach(function (pathPart) {
  var nk = h + pathPart;
- if (obj[nk] !== source.value) { obj[nk] = source.value; changed++; }
+ if (obj[nk] !== sourceValue) { obj[nk] = sourceValue; changed++; }
  });
  });
  });
@@ -171,16 +190,7 @@
  var groups = groupSavedDataKeys(obj);
  Object.keys(groups).forEach(function (canonicalPath) {
  var items = groups[canonicalPath];
- var counts = {};
- items.forEach(function (it) { if (it.value) counts[it.value] = (counts[it.value] || 0) + 1; });
- var sourceValue = null, sourceCount = -1;
- Object.keys(counts).forEach(function (val) {
- if (counts[val] > sourceCount) { sourceValue = val; sourceCount = counts[val]; }
- });
- if (!sourceValue) {
- var first = items.find(function (it) { return it.value; });
- sourceValue = first && first.value;
- }
+ var sourceValue = fgChooseBestSavedDataValue(items);
  if (!sourceValue) return;
  hosts.forEach(function (h) {
  var nk = h + canonicalPath;
