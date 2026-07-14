@@ -59,8 +59,13 @@ try {
       code = code.replace(/allowNetworking:"none"/g, 'allowNetworking:"all"');
       code = code.replace(/allowScriptAccess:!1/g, 'allowScriptAccess:!0');
       code = code.replace(/openUrlMode:"deny"/g, 'openUrlMode:"allow"');
-      if (!code.includes('fontSources:["/fonts/DroidSansFallbackFull.ttf"]')) {
-        code = code.replace(/warnOnUnsupportedContent:!1,/g, 'warnOnUnsupportedContent:!1,fontSources:["/fonts/DroidSansFallbackFull.ttf"],');
+      const fontPatch = `fontSources:["/fonts/DroidSansFallbackFull.ttf"],defaultFonts:{sans:"Droid Sans Fallback",serif:"Droid Sans Fallback",typewriter:"Droid Sans Fallback",SimSun:"Droid Sans Fallback",宋体:"Droid Sans Fallback",SimHei:"Droid Sans Fallback",黑体:"Droid Sans Fallback",微软雅黑:"Droid Sans Fallback","Microsoft YaHei":"Droid Sans Fallback",Arial:"Droid Sans Fallback","Arial Unicode MS":"Droid Sans Fallback"},deviceFontRenderer:"canvas",`;
+      if (!code.includes('defaultFonts:{sans:"Droid Sans Fallback"')) {
+        if (code.includes('fontSources:["/fonts/DroidSansFallbackFull.ttf"],')) {
+          code = code.replace('fontSources:["/fonts/DroidSansFallbackFull.ttf"],', fontPatch);
+        } else {
+          code = code.replace(/warnOnUnsupportedContent:!1,/g, 'warnOnUnsupportedContent:!1,' + fontPatch);
+        }
       }
       if (code !== before) {
         fs.writeFileSync(fp, code, 'utf8');
