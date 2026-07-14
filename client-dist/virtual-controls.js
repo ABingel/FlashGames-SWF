@@ -374,14 +374,27 @@
   }
 
   function makeBtn(label, cls, codeOrFn, title) {
-    var b = document.createElement('button');
-    b.type = 'button';
+    // 手机/微信 WebView 对 <button> 长按常会强制弹出系统菜单；游戏内虚拟键改用 div，避免原生按钮长按行为。
+    var b = document.createElement('div');
+    b.setAttribute('role', 'button');
+    b.setAttribute('aria-label', title || label);
+    b.setAttribute('tabindex', '-1');
+    b.draggable = false;
     b.className = 'fg-vkey ' + cls;
     b.textContent = label;
     b.title = title || label;
+    try {
+      b.style.webkitTouchCallout = 'none';
+      b.style.webkitUserSelect = 'none';
+      b.style.userSelect = 'none';
+      b.style.touchAction = 'none';
+      b.style.webkitTapHighlightColor = 'transparent';
+    } catch (_) {}
     bindButton(b, codeOrFn);
-    ['contextmenu','selectstart','dragstart'].forEach(function (name) {
-      b.addEventListener(name, function (ev) { ev.preventDefault(); ev.stopPropagation(); return false; }, { passive: false });
+    ['contextmenu','selectstart','dragstart','mousedown','mouseup','click'].forEach(function (name) {
+      b.addEventListener(name, function (ev) {
+        if (name !== 'click') { ev.preventDefault(); ev.stopPropagation(); return false; }
+      }, { passive: false });
     }); // fg-vkey-anti-longpress
     return b;
   }
@@ -399,11 +412,11 @@
 html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout *{-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important;touch-action:none!important;}\
 #fg-vkey-root{position:fixed;inset:0;z-index:99996;display:none;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}\
 #fg-vkey-root.fg-vkey-show{display:block;}\
-#fg-vkey-root button{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}\
+#fg-vkey-root button,#fg-vkey-root .fg-vkey{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}\
 .fg-vkey-panel{position:absolute;pointer-events:auto;}\
 .fg-vkey-dpad{left:14px;bottom:18px;width:168px;height:168px;}\
 .fg-vkey-actions{right:12px;bottom:18px;width:214px;height:178px;}\
-.fg-vkey{position:absolute;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;border-radius:18px;font-weight:800;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);touch-action:none;}\
+.fg-vkey{position:absolute;display:flex;align-items:center;justify-content:center;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;touch-action:none!important;-webkit-tap-highlight-color:transparent;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;border-radius:18px;font-weight:800;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);touch-action:none;}\
 .fg-vkey-active{background:rgba(80,160,255,.82)!important;transform:scale(.96);}.fg-vkey-locked{background:rgba(34,197,94,.88)!important;border-color:rgba(187,247,208,.95)!important;box-shadow:0 0 0 3px rgba(34,197,94,.22),0 2px 12px rgba(0,0,0,.28)!important;}\
 .fg-vkey-up{left:56px;top:0;width:58px;height:58px;}\
 .fg-vkey-left{left:0;top:56px;width:58px;height:58px;}\
