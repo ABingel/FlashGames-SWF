@@ -244,6 +244,26 @@
     return false;
   }
 
+  function installGamePageLongPressGuard() {
+    try {
+      document.documentElement.classList.add('fg-game-no-callout');
+      document.body && document.body.classList.add('fg-game-no-callout');
+    } catch (_) {}
+    function blockPageMenu(ev) {
+      if (!isGamePage()) return;
+      try {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      } catch (_) {}
+      return false;
+    }
+    ['contextmenu','selectstart','dragstart','gesturestart'].forEach(function (name) {
+      document.addEventListener(name, blockPageMenu, true);
+      window.addEventListener(name, blockPageMenu, true);
+    });
+  }
+
   function effectiveMoveMode() {
     // 《冒险王之神兵传奇》移动键是 WASD，方向键无效；按游戏 id 强制映射。
     if (/\/play\/14754(?:\b|$)/.test(window.location.pathname)) return 'wasd';
@@ -404,6 +424,7 @@
     var style = document.createElement('style');
     style.id = 'fg-vkeys-style';
     style.textContent = '\
+html.fg-game-no-callout,body.fg-game-no-callout,body.fg-game-no-callout *{-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important;}\
 #fg-vkey-config-toggle{position:fixed;right:120px;top:calc(env(safe-area-inset-top,0px) + 72px);bottom:auto;z-index:99998;width:46px;height:46px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,42,.72);color:#fff;font-size:21px;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}\
 #fg-vkey-toggle{position:fixed;right:66px;top:calc(env(safe-area-inset-top,0px) + 72px);bottom:auto;z-index:99997;width:46px;height:46px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,42,.72);color:#fff;font-size:21px;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}\
 #fg-pause-btn{right:174px!important;top:calc(env(safe-area-inset-top,0px) + 72px)!important;bottom:auto!important;width:46px!important;height:46px!important;z-index:99999!important;background:rgba(15,23,42,.72)!important;border:1px solid rgba(255,255,255,.25)!important;box-shadow:0 4px 16px rgba(0,0,0,.28)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;font-size:21px!important;}\
@@ -587,6 +608,7 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
     root.appendChild(dpad);
     root.appendChild(actions);
     document.body.appendChild(root);
+    installGamePageLongPressGuard();
     ['contextmenu','selectstart','dragstart'].forEach(function (name) {
       root.addEventListener(name, function (ev) { ev.preventDefault(); ev.stopPropagation(); return false; }, { passive: false });
     }); // fg-vkey-root-contextmenu-guard
