@@ -20,9 +20,9 @@ const indexPath = path.join(CLIENT_DIST, 'index.html');
 if (fs.existsSync(indexPath)) {
   let html = fs.readFileSync(indexPath, 'utf8');
 
-  // 清除旧的 cloud-save 引用（如有），避免容器重启后重复插入
+  // 清除旧的增强脚本引用（如有），避免容器重启后重复插入
   html = html.replace(
-    /<script src="\/cloud-(early-restore|save)\.js[^"]*"><\/script>\n?\s*/g,
+    /<script src="\/(cloud-(early-restore|save)|virtual-controls)\.js[^"]*"><\/script>\n?\s*/g,
     ''
   );
 
@@ -37,7 +37,7 @@ if (fs.existsSync(indexPath)) {
 
   html = html.replace(
     '</body>',
-    '  <script src="/cloud-save.js?v=20260714"></script>\n</body>'
+    '  <script src="/virtual-controls.js?v=20260714"></script>\n  <script src="/cloud-save.js?v=20260714"></script>\n</body>'
   );
 
   fs.writeFileSync(indexPath, html, 'utf8');

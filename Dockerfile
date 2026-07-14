@@ -12,6 +12,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 # 复制云端存档前端文件
 COPY client-dist/cloud-save.js /app/client/dist/cloud-save.js
 COPY client-dist/cloud-early-restore.js /app/client/dist/cloud-early-restore.js
+COPY client-dist/virtual-controls.js /app/client/dist/virtual-controls.js
 
 # 复制云端存档服务端路由
 COPY server/routes/cloud-save.js /app/server/src/routes/cloud-save.js

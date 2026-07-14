@@ -12,7 +12,10 @@
 - 云端存档系统：支持 localStorage + IndexedDB 同步
 - 存档码跨设备使用：手机上传，电脑拉取
 - 手动上传/拉取，避免自动同步覆盖存档
-- 启动时自动注入云存档脚本和服务端 API
+- 移动端虚拟按键：方向键真实按住，支持游戏原生“双击方向冲刺”
+- 动作键支持双击锁定，方便长按攻击/蓄力
+- 虚拟按键层屏蔽手机浏览器长按菜单、文字选择和拖拽
+- 启动时自动注入云存档脚本、虚拟按键脚本和服务端 API
 
 ## 🚀 一键部署
 
@@ -116,7 +119,8 @@ FlashGames-SWF/
 ├── data/                      # 数据库和云存档持久化目录
 ├── client-dist/               # 前端增强脚本
 │   ├── cloud-save.js
-│   └── cloud-early-restore.js
+│   ├── cloud-early-restore.js
+│   └── virtual-controls.js
 ├── server/routes/
 │   └── cloud-save.js          # 云存档 API
 ├── deploy/                    # 历史补丁脚本
