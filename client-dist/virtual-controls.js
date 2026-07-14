@@ -242,20 +242,46 @@
   function bindButton(el, getCode) {
     var isDirectionButton = /fg-vkey-(up|down|left|right)/.test(el.className || '');
     if (isDirectionButton) {
+      var dirActive = false;
+      var dirCode = null;
+      var dirPointerId = null;
       function currentDirCode() { return typeof getCode === 'function' ? getCode() : getCode; }
       function preventDir(ev) { if (ev) { ev.preventDefault(); ev.stopPropagation(); } }
-      function startDir(ev) { preventDir(ev); el.classList.add('fg-vkey-active'); press(currentDirCode()); }
-      function endDir(ev) { preventDir(ev); el.classList.remove('fg-vkey-active'); release(currentDirCode()); }
+      function startDir(ev) {
+        preventDir(ev);
+        if (ev && ev.pointerId != null && el.setPointerCapture) {
+          try { el.setPointerCapture(ev.pointerId); dirPointerId = ev.pointerId; } catch (_) {}
+        }
+        if (dirActive) return;
+        dirActive = true;
+        dirCode = currentDirCode();
+        el.classList.add('fg-vkey-active');
+        press(dirCode);
+      }
+      function endDir(ev) {
+        preventDir(ev);
+        if (dirPointerId != null && el.releasePointerCapture) {
+          try { el.releasePointerCapture(dirPointerId); } catch (_) {}
+          dirPointerId = null;
+        }
+        if (!dirActive) return;
+        dirActive = false;
+        el.classList.remove('fg-vkey-active');
+        release(dirCode || currentDirCode());
+        dirCode = null;
+      }
+      // 方向键必须支持“第二次按住=冲刺”，所以不用双击锁定；同时用 pointer capture + 全量阻止默认行为避免手机长按菜单。
       if (window.PointerEvent) {
         el.addEventListener('pointerdown', startDir, { passive: false });
         el.addEventListener('pointerup', endDir, { passive: false });
         el.addEventListener('pointercancel', endDir, { passive: false });
-        el.addEventListener('pointerleave', endDir, { passive: false });
-      } else {
-        el.addEventListener('touchstart', startDir, { passive: false });
-        el.addEventListener('touchend', endDir, { passive: false });
-        el.addEventListener('touchcancel', endDir, { passive: false });
+        el.addEventListener('lostpointercapture', endDir, { passive: false });
       }
+      el.addEventListener('touchstart', startDir, { passive: false });
+      el.addEventListener('touchmove', preventDir, { passive: false });
+      el.addEventListener('touchend', endDir, { passive: false });
+      el.addEventListener('touchcancel', endDir, { passive: false });
+      el.addEventListener('contextmenu', function (ev) { preventDir(ev); return false; }, { passive: false });
       return;
     }
 
