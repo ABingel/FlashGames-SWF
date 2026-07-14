@@ -221,6 +221,22 @@
     try {
       document.querySelectorAll('.fg-vkey-locked').forEach(function (el) { el.classList.remove('fg-vkey-locked', 'fg-vkey-active'); });
     } catch (_) {}
+    try { document.documentElement.classList.remove('fg-vkey-suppress-callout'); document.body.classList.remove('fg-vkey-suppress-callout'); } catch (_) {}
+  }
+
+  function suppressBrowserMenu(ms) {
+    suppressBrowserMenuUntil = Date.now() + (ms || 1200);
+    try { document.documentElement.classList.add('fg-vkey-suppress-callout'); document.body.classList.add('fg-vkey-suppress-callout'); } catch (_) {}
+  }
+
+  function shouldSuppressBrowserMenu() {
+    return isVisible && (Date.now() < suppressBrowserMenuUntil || Object.keys(activeKeys).length > 0);
+  }
+
+  function globalSuppressHandler(ev) {
+    if (!shouldSuppressBrowserMenu()) return;
+    try { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); } catch (_) {}
+    return false;
   }
 
   function effectiveMoveMode() {
@@ -246,7 +262,7 @@
       var dirCode = null;
       var dirPointerId = null;
       function currentDirCode() { return typeof getCode === 'function' ? getCode() : getCode; }
-      function preventDir(ev) { if (ev) { ev.preventDefault(); ev.stopPropagation(); } }
+      function preventDir(ev) { suppressBrowserMenu(1600); if (ev) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); } }
       function startDir(ev) {
         preventDir(ev);
         if (ev && ev.pointerId != null && el.setPointerCapture) {
@@ -269,6 +285,8 @@
         el.classList.remove('fg-vkey-active');
         release(dirCode || currentDirCode());
         dirCode = null;
+        suppressBrowserMenu(700);
+        setTimeout(function () { if (!Object.keys(activeKeys).length) { try { document.documentElement.classList.remove('fg-vkey-suppress-callout'); document.body.classList.remove('fg-vkey-suppress-callout'); } catch (_) {} } }, 750);
       }
       // 方向键必须支持“第二次按住=冲刺”，所以不用双击锁定；同时用 pointer capture + 全量阻止默认行为避免手机长按菜单。
       if (window.PointerEvent) {
@@ -373,6 +391,7 @@
 #fg-pause-btn{right:174px!important;top:calc(env(safe-area-inset-top,0px) + 72px)!important;bottom:auto!important;width:46px!important;height:46px!important;z-index:99999!important;background:rgba(15,23,42,.72)!important;border:1px solid rgba(255,255,255,.25)!important;box-shadow:0 4px 16px rgba(0,0,0,.28)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;font-size:21px!important;}\
 #fg-save-btn{display:none!important;}\
 #fg-vkey-toggle:hover,#fg-vkey-config-toggle:hover,#fg-save-btn:hover,#fg-pause-btn:hover,#fg-cloud-btn:hover{background:rgba(37,99,235,.88)!important;transform:translateY(-1px) scale(1.04)!important;}\
+html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout *{-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important;touch-action:none!important;}\
 #fg-vkey-root{position:fixed;inset:0;z-index:99996;display:none;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}\
 #fg-vkey-root.fg-vkey-show{display:block;}\
 #fg-vkey-root button{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}\
@@ -553,6 +572,20 @@
     ['contextmenu','selectstart','dragstart'].forEach(function (name) {
       root.addEventListener(name, function (ev) { ev.preventDefault(); ev.stopPropagation(); return false; }, { passive: false });
     }); // fg-vkey-root-contextmenu-guard
+
+    ['contextmenu','selectstart','dragstart','gesturestart'].forEach(function (name) {
+      document.addEventListener(name, globalSuppressHandler, true);
+      window.addEventListener(name, globalSuppressHandler, true);
+    });
+    ['touchstart','touchmove','touchend','touchcancel','pointerdown','pointermove','pointerup','pointercancel'].forEach(function (name) {
+      document.addEventListener(name, function (ev) {
+        var t = ev.target;
+        var inVkey = false;
+        try { inVkey = !!(t && t.closest && t.closest('#fg-vkey-root,#fg-vkey-toggle,#fg-vkey-config-toggle,#fg-vkey-config-panel')); } catch (_) {}
+        if (inVkey) suppressBrowserMenu(1600);
+        if (shouldSuppressBrowserMenu() && inVkey) globalSuppressHandler(ev);
+      }, { capture: true, passive: false });
+    });
 
     window.addEventListener('blur', releaseAll);
     document.addEventListener('keydown', function (ev) {
