@@ -22,7 +22,7 @@ if (fs.existsSync(indexPath)) {
 
   // 清除旧的增强脚本引用（如有），避免容器重启后重复插入
   html = html.replace(
-    /<script src="\/(cloud-(early-restore|save)|virtual-controls)\.js[^"]*"><\/script>\n?\s*/g,
+    /<script src="\/(cloud-(early-restore|save)|virtual-controls|pause-protect)\.js[^"]*"><\/script>\n?\s*/g,
     ''
   );
 
@@ -37,13 +37,39 @@ if (fs.existsSync(indexPath)) {
 
   html = html.replace(
     '</body>',
-    '  <script src="/virtual-controls.js?v=20260714"></script>\n  <script src="/cloud-save.js?v=20260714"></script>\n</body>'
+    '  <script src="/pause-protect.js?v=20260714b"></script>\n  <script src="/virtual-controls.js?v=20260714b"></script>\n  <script src="/cloud-save.js?v=20260714b"></script>\n</body>'
   );
 
   fs.writeFileSync(indexPath, html, 'utf8');
   console.log('[patch] index.html ✓ 已添加 cloud-save 脚本');
 } else {
   console.warn('[patch] index.html 未找到，跳过');
+}
+
+
+// ========== 2.5 补丁前端 JS：Ruffle 中文字体/联网配置 ==========
+try {
+  const assetsDir = path.join(CLIENT_DIST, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    for (const name of fs.readdirSync(assetsDir)) {
+      if (!name.endsWith('.js')) continue;
+      const fp = path.join(assetsDir, name);
+      let code = fs.readFileSync(fp, 'utf8');
+      const before = code;
+      code = code.replace(/allowNetworking:"none"/g, 'allowNetworking:"all"');
+      code = code.replace(/allowScriptAccess:!1/g, 'allowScriptAccess:!0');
+      code = code.replace(/openUrlMode:"deny"/g, 'openUrlMode:"allow"');
+      if (!code.includes('fontSources:["/fonts/DroidSansFallbackFull.ttf"]')) {
+        code = code.replace(/warnOnUnsupportedContent:!1,/g, 'warnOnUnsupportedContent:!1,fontSources:["/fonts/DroidSansFallbackFull.ttf"],');
+      }
+      if (code !== before) {
+        fs.writeFileSync(fp, code, 'utf8');
+        console.log('[patch] 前端资源 ✓ 已修复 Ruffle 配置:', name);
+      }
+    }
+  }
+} catch (e) {
+  console.warn('[patch] Ruffle 配置补丁失败:', e.message);
 }
 
 // ========== 3. 补丁 server index.js：注册增强路由 ==========
