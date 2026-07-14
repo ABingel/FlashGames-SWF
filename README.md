@@ -19,13 +19,9 @@
 - 按住菜单/选择文本拦截
 - 按键配置按游戏保存，随云存档恢复
 
-### 🐛 游戏兼容性修复
-- **《冒险王之神兵传奇》进度条卡住修复**
-  - SWF 相对资源路径兼容路由（music/mapPic/monster 等）
-  - Helmet `Referrer-Policy` 改为 `same-origin`
-- **Ruffle 中文字体渲染修复**
-  - 内置 DroidSansFallbackFull 字体
-  - 宋体/黑体/微软雅黑 → Droid Sans Fallback 映射
+### 🐛 Ruffle 中文字体渲染修复
+- 内置 DroidSansFallbackFull 字体
+- 宋体/黑体/微软雅黑 → Droid Sans Fallback 映射
 
 ### ⏸️ 暂停保护
 - 长按菜单拦截（contextmenu/selectstart/dragstart）
@@ -33,7 +29,6 @@
 
 ### 🐍 服务端增强
 - `/api/cloud-save/:code` 云存档 GET/PUT API
-- SWF 相对资源智能路由
 - 存档持久化到宿主机挂载目录
 
 ## 🚀 快速开始
@@ -60,8 +55,7 @@ FlashGames-SWF/
 │   ├── cloud-save.js          # 云端存档系统（含 UI）
 │   └── cloud-early-restore.js # 提前恢复脚本（Ruffle 前加载）
 ├── server/routes/             # 服务端增强
-│   ├── cloud-save.js          # 云存档 API
-│   └── swf-resource-proxy.js  # SWF 相对资源智能路由
+│   └── cloud-save.js          # 云存档 API
 ├── deploy/                    # 部署/补丁脚本
 │   ├── apply-flash-save-fix.sh
 │   ├── fix-flash-early-restore.sh
