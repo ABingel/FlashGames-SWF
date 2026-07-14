@@ -26,13 +26,33 @@ cd FlashGames-SWF
 mkdir -p game data
 ```
 
-### 2. 下载 docker-compose.yml
+### 2. 创建 docker-compose.yml
+
+可以直接下载：
 
 ```bash
 curl -O https://raw.githubusercontent.com/ABingel/FlashGames-SWF/master/docker-compose.yml
 ```
 
-如果没有 `curl`，也可以直接从 GitHub 复制 `docker-compose.yml` 内容到本地。
+也可以手动新建 `docker-compose.yml`，复制下面内容：
+
+```yaml
+services:
+  flash-games:
+    image: ghcr.io/abingel/flash-games-swf:latest
+    container_name: flash-games-swf
+    ports:
+      - "3000:3000"
+    volumes:
+      # SWF 游戏文件目录（放 .swf 文件，自动扫描入库）
+      - ./game:/app/game
+      # SQLite 数据库 + 云存档持久化
+      - ./data:/app/data
+    environment:
+      # 管理密码（部署前务必修改）
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-flash2024}
+    restart: unless-stopped
+```
 
 ### 3. 放入游戏文件
 
@@ -68,22 +88,22 @@ http://192.168.31.99:3000
 
 ## 🔧 可选配置
 
-复制环境变量示例：
+如果想改管理密码，可以直接编辑 `docker-compose.yml` 这一行：
 
-```bash
-cp .env.example .env
+```yaml
+- ADMIN_PASSWORD=${ADMIN_PASSWORD:-flash2024}
 ```
 
-修改 `.env` 里的管理密码：
+例如改成：
 
-```env
-ADMIN_PASSWORD=你的密码
+```yaml
+- ADMIN_PASSWORD=${ADMIN_PASSWORD:-你的密码}
 ```
 
 然后重启：
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
 ## 📁 目录说明
