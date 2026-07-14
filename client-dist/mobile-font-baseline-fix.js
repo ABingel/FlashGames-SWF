@@ -27,7 +27,7 @@
   function shiftedY(ctx, text, y) {
     if (!shouldShift(ctx, text)) return y;
     // 移动端 Ruffle/canvas 中文基线方向受内部变换影响；按字号轻微反向补偿，避免过度影响不同字号。
-    return y + Math.max(1, Math.round(fontSizeOf(ctx) * 0.32));
+    return y + Math.max(1, Math.round(fontSizeOf(ctx) * 0.64));
   }
 
   if (rawFillText) {
