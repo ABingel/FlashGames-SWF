@@ -60,7 +60,7 @@ try {
       code = code.replace(/allowNetworking:"none"/g, 'allowNetworking:"all"');
       code = code.replace(/allowScriptAccess:!1/g, 'allowScriptAccess:!0');
       code = code.replace(/openUrlMode:"deny"/g, 'openUrlMode:"allow"');
-      const fontPatch = `fontSources:["/fonts/DroidSansFallbackFull.ttf"],defaultFonts:{sans:"Droid Sans Fallback",serif:"Droid Sans Fallback",typewriter:"Droid Sans Fallback",SimSun:"Droid Sans Fallback",宋体:"Droid Sans Fallback",SimHei:"Droid Sans Fallback",黑体:"Droid Sans Fallback",微软雅黑:"Droid Sans Fallback","Microsoft YaHei":"Droid Sans Fallback",Arial:"Droid Sans Fallback","Arial Unicode MS":"Droid Sans Fallback"},deviceFontRenderer:"canvas",`;
+      const fontPatch = `fontSources:["/fonts/NotoSansSC-Regular.ttf","/fonts/DroidSansFallbackFull.ttf"],defaultFonts:{sans:"Noto Sans SC",serif:"Noto Sans SC",typewriter:"Noto Sans SC",SimSun:"Noto Sans SC",宋体:"Noto Sans SC",SimHei:"Noto Sans SC",黑体:"Noto Sans SC",微软雅黑:"Noto Sans SC","Microsoft YaHei":"Noto Sans SC",Arial:"Noto Sans SC","Arial Unicode MS":"Noto Sans SC"},deviceFontRenderer:"canvas",`;
       if (code.includes('fontSources:["/fonts/DroidSansFallbackFull.ttf"]')) {
         code = code.replace(/fontSources:\["\/fonts\/DroidSansFallbackFull\.ttf"\],defaultFonts:\{sans:"Droid Sans Fallback".*?\},deviceFontRenderer:(?:"canvas"|"embedded"|\([^,]+\)),/g, fontPatch);
       }
