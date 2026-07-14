@@ -14,6 +14,7 @@ COPY client-dist/cloud-save.js /app/client/dist/cloud-save.js
 COPY client-dist/cloud-early-restore.js /app/client/dist/cloud-early-restore.js
 COPY client-dist/virtual-controls.js /app/client/dist/virtual-controls.js
 COPY client-dist/pause-protect.js /app/client/dist/pause-protect.js
+COPY fonts/DroidSansFallbackFull.ttf /app/client/dist/fonts/DroidSansFallbackFull.ttf
 
 # 复制云端存档服务端路由
 COPY server/routes/cloud-save.js /app/server/src/routes/cloud-save.js
