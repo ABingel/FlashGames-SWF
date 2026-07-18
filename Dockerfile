@@ -13,6 +13,8 @@ LABEL org.opencontainers.image.licenses="MIT"
 COPY client-dist/cloud-save.js /app/client/dist/cloud-save.js
 COPY client-dist/cloud-early-restore.js /app/client/dist/cloud-early-restore.js
 COPY client-dist/virtual-controls.js /app/client/dist/virtual-controls.js
+COPY client-dist/mute-control.js /app/client/dist/mute-control.js
+COPY client-dist/metadata-enhance.js /app/client/dist/metadata-enhance.js
 COPY client-dist/pause-protect.js /app/client/dist/pause-protect.js
 COPY fonts/DroidSansFallbackFull.ttf /app/client/dist/fonts/DroidSansFallbackFull.ttf
 COPY fonts/NotoSansSC-Regular.ttf /app/client/dist/fonts/NotoSansSC-Regular.ttf
@@ -21,6 +23,11 @@ COPY fonts/NotoSerifSC-Regular.ttf /app/client/dist/fonts/NotoSerifSC-Regular.tt
 # 复制云端存档服务端路由
 COPY server/routes/cloud-save.js /app/server/src/routes/cloud-save.js
 COPY server/routes/swf-resource-proxy.js /app/server/src/routes/swf-resource-proxy.js
+COPY server/src/db.js /app/server/src/db.js
+COPY server/src/index.js /app/server/src/index.js
+COPY server/src/scanner.js /app/server/src/scanner.js
+COPY server/src/scraper.js /app/server/src/scraper.js
+COPY server/src/routes/games.js /app/server/src/routes/games.js
 
 # 复制启动补丁脚本
 COPY entrypoint-patch.js /app/entrypoint-patch.js

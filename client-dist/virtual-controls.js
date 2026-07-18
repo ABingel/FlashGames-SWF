@@ -14,6 +14,8 @@
   var suppressBrowserMenuUntil = 0;
   var pollTimer = null;
   var keyKeepAliveTimer = null;
+  var comboExpanded = false;
+  var comboToggleBtn = null;
 
   var KEY_INFO = {
     ArrowUp:    { key: 'ArrowUp',    code: 'ArrowUp',    keyCode: 38, which: 38 },
@@ -48,6 +50,10 @@
     { id: 'i', cls: 'fg-vkey-i', defaultCode: 'KeyI', name: '按键5' },
     { id: 'space', cls: 'fg-vkey-space', defaultCode: 'Space', name: '按键6' }
   ];
+  var COMBO_SLOTS = [
+    { id: 'combo1', cls: 'fg-vkey-combo1', name: '组合键1', defaultCodes: ['KeyJ', 'KeyK'] },
+    { id: 'combo2', cls: 'fg-vkey-combo2', name: '组合键2', defaultCodes: ['KeyU', 'KeyI', 'KeyO'] }
+  ];
   var KEY_CHOICES = (function () {
     var list = [];
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function (ch) { list.push('Key' + ch); });
@@ -77,6 +83,55 @@
     var cfg = currentGameConfig();
     return (cfg.actions && cfg.actions[slot.id]) || slot.defaultCode;
   }
+  function comboConfig(slot) {
+    var cfg = currentGameConfig();
+    var saved = cfg.combos && cfg.combos[slot.id];
+    var defaults = slot.defaultCodes || ['KeyJ', 'KeyK'];
+    var codes = (saved && Array.isArray(saved.codes) ? saved.codes : defaults).filter(function (code) { return KEY_INFO[code]; }).slice(0, 3);
+    var count = Number(saved && saved.count) || codes.length || defaults.length || 2;
+    count = count === 3 ? 3 : 2;
+    while (codes.length < count) codes.push(defaults[codes.length] || KEY_CHOICES[0]);
+    return { count: count, codes: codes.slice(0, count) };
+  }
+  function comboCodes(slot) {
+    return comboConfig(slot).codes;
+  }
+  function defaultMoveModeForGame() {
+    // 《冒险王之神兵传奇》移动键是 WASD，方向键无效；作为默认值，但用户仍可在本游戏内覆盖。
+    if (/^\/play\/14754(?:\/|$)/.test(window.location.pathname)) return 'wasd';
+    return moveMode || 'both';
+  }
+  function gameMoveMode() {
+    var cfg = currentGameConfig();
+    return cfg.moveMode || defaultMoveModeForGame();
+  }
+  function moveModeLabel(mode) {
+    if (mode === 'wasd') return 'WASD';
+    if (mode === 'arrows') return '方向';
+    return '自动';
+  }
+  function saveGameMoveMode(mode) {
+    var normalized = mode === 'wasd' ? 'wasd' : (mode === 'arrows' ? 'arrows' : 'both');
+    var all = readConfigs();
+    var id = currentGameId();
+    all[id] = all[id] || {};
+    all[id].moveMode = normalized;
+    all[id].updatedAt = new Date().toISOString();
+    writeConfigs(all);
+    localStorage.setItem('fg-vkeys-move-mode', normalized);
+    moveMode = normalized;
+    refreshActionLabels();
+    refreshMoveModeUi();
+  }
+  function comboPhysicalCodes(slot) {
+    var dirMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    var out = [];
+    comboCodes(slot).forEach(function (code) {
+      var mapped = dirMap[code] ? moveCode(dirMap[code]) : code;
+      codeList(mapped).forEach(function (c) { if (out.indexOf(c) < 0) out.push(c); });
+    });
+    return out;
+  }
   function codeLabel(code) {
     var map = { Space: '空格', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
     if (map[code]) return map[code];
@@ -90,6 +145,24 @@
     all[id] = all[id] || {};
     all[id].actions = all[id].actions || {};
     all[id].actions[slotId] = code;
+    all[id].updatedAt = new Date().toISOString();
+    writeConfigs(all);
+    refreshActionLabels();
+  }
+  function saveComboConfig(slotId, patch) {
+    var all = readConfigs();
+    var id = currentGameId();
+    var slot = COMBO_SLOTS.filter(function (s) { return s.id === slotId; })[0] || COMBO_SLOTS[0];
+    var cur = comboConfig(slot);
+    var next = { count: cur.count, codes: cur.codes.slice() };
+    if (patch && patch.count) next.count = Number(patch.count) === 3 ? 3 : 2;
+    if (patch && patch.index != null && patch.code) next.codes[Number(patch.index)] = patch.code;
+    while (next.codes.length < 3) next.codes.push(slot.defaultCodes[next.codes.length] || KEY_CHOICES[0]);
+    next.codes = next.codes.filter(function (code) { return KEY_INFO[code]; }).slice(0, next.count);
+    while (next.codes.length < next.count) next.codes.push(slot.defaultCodes[next.codes.length] || KEY_CHOICES[0]);
+    all[id] = all[id] || {};
+    all[id].combos = all[id].combos || {};
+    all[id].combos[slotId] = next;
     all[id].updatedAt = new Date().toISOString();
     writeConfigs(all);
     refreshActionLabels();
@@ -109,6 +182,14 @@
         var code = slotCode(slot);
         btn.textContent = codeLabel(code);
         btn.title = slot.name + '：' + codeLabel(code) + '（点击短按）';
+      }
+    });
+    COMBO_SLOTS.forEach(function (slot) {
+      var btn = document.querySelector('[data-fg-combo-slot="' + slot.id + '"]');
+      if (btn) {
+        var label = comboCodes(slot).map(codeLabel).join('+');
+        btn.textContent = label;
+        btn.title = slot.name + '：' + label + '（点击同时短按）';
       }
     });
   }
@@ -234,8 +315,21 @@
     return isVisible && (Date.now() < suppressBrowserMenuUntil || Object.keys(activeKeys).length > 0);
   }
 
+  function isInsideConfigPanel(target) {
+    try { return !!(target && target.closest && target.closest('#fg-vkey-config-panel')); }
+    catch (_) { return false; }
+  }
+
   function globalSuppressHandler(ev, stopFlow) {
     if (!shouldSuppressBrowserMenu()) return;
+    // 设置面板里的下拉框/按钮需要保留默认点击行为；否则手机上 select 会打不开。
+    if (isInsideConfigPanel(ev && ev.target)) {
+      if (stopFlow && ev && /^(contextmenu|selectstart|dragstart|gesturestart)$/.test(ev.type || '')) {
+        try { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); } catch (_) {}
+        return false;
+      }
+      return;
+    }
     try {
       ev.preventDefault();
       // pointer/touch 事件不能阻断传播，否则虚拟按键自身收不到按下事件；菜单/选择类事件才彻底拦截。
@@ -265,9 +359,7 @@
   }
 
   function effectiveMoveMode() {
-    // 《冒险王之神兵传奇》移动键是 WASD，方向键无效；按游戏 id 强制映射。
-    if (/\/play\/14754(?:\b|$)/.test(window.location.pathname)) return 'wasd';
-    return moveMode;
+    return gameMoveMode();
   }
 
   function moveCode(dir) {
@@ -276,8 +368,19 @@
     var mode = effectiveMoveMode();
     if (mode === 'wasd') return wasd[dir];
     if (mode === 'arrows') return arrows[dir];
-    // 默认 both：同时发方向键和 WASD，兼容不同 Flash 游戏。
+    // 自动 both：同时发方向键和 WASD，兼容不同 Flash 游戏。
     return [arrows[dir], wasd[dir]];
+  }
+
+  function refreshMoveModeUi() {
+    try {
+      var label = moveModeLabel(effectiveMoveMode());
+      document.querySelectorAll('[data-fg-move-mode-label]').forEach(function (el) {
+        el.textContent = label;
+        el.title = '移动模式：' + label + '（点击切换）';
+      });
+      document.querySelectorAll('select[data-move-mode]').forEach(function (sel) { sel.value = effectiveMoveMode(); });
+    } catch (_) {}
   }
 
   function bindButton(el, getCode) {
@@ -339,9 +442,19 @@
       ev.stopPropagation();
     }
     function shortPress(code) {
-      press(code);
       clearTimeout(tapTimer);
-      tapTimer = setTimeout(function () { release(code); }, 140);
+      var codes = codeList(code);
+      // 组合键按真实操作顺序触发：先按住第 1 个键，再依次补第 2/第 3 个键，最后一起释放。
+      // 这样「↓ + L」这类技能会更像“按住下，再点 L”，而不是两个键完全同一毫秒触发。
+      if (codes.length > 1) {
+        codes.forEach(function (c, i) {
+          setTimeout(function () { press(c); }, i * 35);
+        });
+        tapTimer = setTimeout(function () { release(codes); }, 180 + (codes.length - 1) * 35);
+        return;
+      }
+      press(codes[0]);
+      tapTimer = setTimeout(function () { release(codes[0]); }, 140);
     }
     function handleTap(ev) {
       prevent(ev);
@@ -407,7 +520,7 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
 #fg-vkey-root button,#fg-vkey-root .fg-vkey{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}\
 .fg-vkey-panel{position:absolute;pointer-events:auto;}\
 .fg-vkey-dpad{left:14px;bottom:18px;width:168px;height:168px;}\
-.fg-vkey-actions{right:12px;bottom:18px;width:214px;height:178px;}\
+.fg-vkey-actions{right:12px;bottom:18px;width:214px;height:240px;}\
 .fg-vkey{position:absolute;display:flex;align-items:center;justify-content:center;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;touch-action:none!important;-webkit-tap-highlight-color:transparent;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.45);color:#fff;border-radius:18px;font-weight:800;font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.25);backdrop-filter:blur(4px);touch-action:none;}\
 .fg-vkey-active{background:rgba(80,160,255,.82)!important;transform:scale(.96);}.fg-vkey-locked{background:rgba(34,197,94,.88)!important;border-color:rgba(187,247,208,.95)!important;box-shadow:0 0 0 3px rgba(34,197,94,.22),0 2px 12px rgba(0,0,0,.28)!important;}\
 .fg-vkey-up{left:56px;top:0;width:58px;height:58px;}\
@@ -421,12 +534,22 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
 .fg-vkey-u{right:144px;bottom:108px;width:52px;height:52px;border-radius:999px;font-size:15px;}\
 .fg-vkey-i{right:144px;bottom:50px;width:52px;height:52px;border-radius:999px;font-size:15px;}\
 .fg-vkey-space{right:76px;bottom:8px;width:62px;height:48px;border-radius:16px;font-size:14px;}\
+.fg-vkey-combo1{right:76px;bottom:188px;width:62px;height:42px;border-radius:16px;font-size:12px;line-height:1.05;text-align:center;display:none;}\
+.fg-vkey-combo2{right:8px;bottom:188px;width:62px;height:42px;border-radius:16px;font-size:12px;line-height:1.05;text-align:center;display:none;}\
+#fg-vkey-root.fg-combo-expanded .fg-vkey-combo1,#fg-vkey-root.fg-combo-expanded .fg-vkey-combo2{display:flex;}\
+.fg-vkey-combo-toggle{right:144px;bottom:8px;width:52px;height:36px;border-radius:14px;font-size:17px;}\
+.fg-vkey-combo-toggle.fg-combo-on{background:rgba(37,99,235,.88)!important;border-color:rgba(191,219,254,.95)!important;}\
 .fg-vkey-config{right:144px;bottom:8px;width:52px;height:36px;border-radius:14px;font-size:17px;}\
-#fg-vkey-config-panel{position:fixed;right:12px;bottom:210px;z-index:100000;width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 260px);overflow:auto;background:rgba(15,23,42,.97);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,.38);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}\
+#fg-vkey-config-panel{position:fixed;right:12px;bottom:210px;z-index:100000;width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 260px);overflow:auto;background:rgba(15,23,42,.97);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,.38);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;pointer-events:auto!important;touch-action:auto!important;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}\
+#fg-vkey-config-panel,#fg-vkey-config-panel *{touch-action:auto!important;pointer-events:auto!important;}\
 .fg-vkey-config-title{font-weight:800;font-size:16px;margin-bottom:4px;}\
 .fg-vkey-config-sub{font-size:12px;color:#cbd5e1;margin-bottom:10px;}\
 .fg-vkey-config-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;}\
 .fg-vkey-config-row select{min-width:110px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:#0f172a;color:#fff;padding:6px 8px;}\
+.fg-vkey-config-section{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12);font-weight:800;}\
+.fg-vkey-combo-row{display:grid;grid-template-columns:74px 70px 1fr 1fr 1fr;gap:6px;align-items:center;margin:8px 0;}\
+.fg-vkey-combo-row span{font-size:13px;color:#e2e8f0;}\
+.fg-vkey-combo-row select{min-width:0;width:100%;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:#0f172a;color:#fff;padding:6px 5px;}\
 .fg-vkey-config-actions{margin-top:12px;text-align:right;}\
 .fg-vkey-config-actions button{margin-left:8px;border:0;border-radius:9px;background:#334155;color:#fff;padding:8px 10px;}\
 .fg-vkey-mode{left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:999px;font-size:12px;color:rgba(255,255,255,.88);}\
@@ -468,13 +591,70 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
     b.title = slot.name + '：' + codeLabel(slotCode(slot)) + '（点击短按）';
     return b;
   }
+  function makeComboBtn(slot) {
+    var label = comboCodes(slot).map(codeLabel).join('+');
+    var b = makeBtn(label, slot.cls, function () { return comboPhysicalCodes(slot); }, slot.name);
+    b.dataset.fgComboSlot = slot.id;
+    b.title = slot.name + '：' + label + '（点击同时短按）';
+    return b;
+  }
+
+  function setComboExpanded(on) {
+    comboExpanded = !!on;
+    if (root) root.classList.toggle('fg-combo-expanded', comboExpanded);
+    if (comboToggleBtn) {
+      comboToggleBtn.classList.toggle('fg-combo-on', comboExpanded);
+      comboToggleBtn.title = comboExpanded ? '收起组合键' : '展开组合键';
+      comboToggleBtn.setAttribute('aria-label', comboToggleBtn.title);
+    }
+  }
+
+  function makeComboToggleBtn() {
+    var b = document.createElement('div');
+    b.setAttribute('role', 'button');
+    b.setAttribute('aria-label', '展开组合键');
+    b.setAttribute('tabindex', '-1');
+    b.draggable = false;
+    b.className = 'fg-vkey fg-vkey-combo-toggle';
+    b.textContent = '合';
+    b.title = '展开组合键';
+    try {
+      b.style.webkitTouchCallout = 'none';
+      b.style.webkitUserSelect = 'none';
+      b.style.userSelect = 'none';
+      b.style.touchAction = 'none';
+      b.style.webkitTapHighlightColor = 'transparent';
+    } catch (_) {}
+    var lastAt = 0;
+    function toggle(ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }
+      var now = Date.now();
+      if (now - lastAt < 350) return;
+      lastAt = now;
+      setComboExpanded(!comboExpanded);
+    }
+    function guard(ev) { if (ev) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); } }
+    b.addEventListener('click', toggle, { passive: false });
+    b.addEventListener('pointerup', toggle, { passive: false });
+    b.addEventListener('touchend', toggle, { passive: false });
+    ['pointerdown','touchstart','contextmenu','selectstart','dragstart','mousedown','mouseup'].forEach(function (name) {
+      b.addEventListener(name, guard, { passive: false });
+    });
+    comboToggleBtn = b;
+    return b;
+  }
 
   function openConfigPanel() {
     if (configPanel) { configPanel.remove(); configPanel = null; return; }
     var panel = document.createElement('div');
     panel.id = 'fg-vkey-config-panel';
     var html = '<div class="fg-vkey-config-title">🎮 按键设置</div>' +
-      '<div class="fg-vkey-config-sub">当前游戏：' + currentGameId() + '。方向键固定；右侧动作键可选 A-Z、0-9、空格和方向键，配置会随云存档同步。</div>';
+      '<div class="fg-vkey-config-sub">当前游戏：' + currentGameId() + '。移动模式和右侧按键会按游戏保存，并随云存档同步。</div>';
+    html += '<label class="fg-vkey-config-row"><span>移动模式</span><select data-move-mode>' +
+      '<option value="both"' + (effectiveMoveMode() === 'both' ? ' selected' : '') + '>自动：方向键+WASD</option>' +
+      '<option value="wasd"' + (effectiveMoveMode() === 'wasd' ? ' selected' : '') + '>WASD</option>' +
+      '<option value="arrows"' + (effectiveMoveMode() === 'arrows' ? ' selected' : '') + '>方向键</option>' +
+      '</select></label>';
     ACTION_SLOTS.forEach(function (slot) {
       html += '<label class="fg-vkey-config-row"><span>' + slot.name + '</span><select data-slot="' + slot.id + '">';
       KEY_CHOICES.forEach(function (code) {
@@ -482,12 +662,42 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
       });
       html += '</select></label>';
     });
+    html += '<div class="fg-vkey-config-section">组合键按钮</div>';
+    COMBO_SLOTS.forEach(function (slot) {
+      var combo = comboConfig(slot);
+      html += '<div class="fg-vkey-combo-row"><span>' + slot.name + '</span><select data-combo-count="' + slot.id + '">';
+      [2,3].forEach(function (n) { html += '<option value="' + n + '"' + (combo.count === n ? ' selected' : '') + '>' + n + '键</option>'; });
+      html += '</select>';
+      for (var i = 0; i < 3; i++) {
+        html += '<select data-combo-slot="' + slot.id + '" data-combo-index="' + i + '"' + (i >= combo.count ? ' style="display:none"' : '') + '>';
+        KEY_CHOICES.forEach(function (code) {
+          html += '<option value="' + code + '"' + ((combo.codes[i] || slot.defaultCodes[i]) === code ? ' selected' : '') + '>' + codeLabel(code) + '</option>';
+        });
+        html += '</select>';
+      }
+      html += '</div>';
+    });
     html += '<div class="fg-vkey-config-actions"><button id="fg-vkey-config-reset">恢复默认</button><button id="fg-vkey-config-close">完成</button></div>';
     panel.innerHTML = html;
     document.body.appendChild(panel);
     configPanel = panel;
+    panel.querySelectorAll('select[data-move-mode]').forEach(function (sel) {
+      sel.onchange = function () { saveGameMoveMode(sel.value); };
+    });
     panel.querySelectorAll('select[data-slot]').forEach(function (sel) {
       sel.onchange = function () { saveSlotCode(sel.getAttribute('data-slot'), sel.value); };
+    });
+    panel.querySelectorAll('select[data-combo-count]').forEach(function (sel) {
+      sel.onchange = function () {
+        var slotId = sel.getAttribute('data-combo-count');
+        saveComboConfig(slotId, { count: sel.value });
+        panel.querySelectorAll('select[data-combo-slot="' + slotId + '"]').forEach(function (keySel) {
+          keySel.style.display = Number(keySel.getAttribute('data-combo-index')) < Number(sel.value) ? '' : 'none';
+        });
+      };
+    });
+    panel.querySelectorAll('select[data-combo-slot]').forEach(function (sel) {
+      sel.onchange = function () { saveComboConfig(sel.getAttribute('data-combo-slot'), { index: sel.getAttribute('data-combo-index'), code: sel.value }); };
     });
     panel.querySelector('#fg-vkey-config-reset').onclick = function (ev) { ev.preventDefault(); resetCurrentGameConfig(); };
     panel.querySelector('#fg-vkey-config-close').onclick = function (ev) { ev.preventDefault(); panel.remove(); configPanel = null; };
@@ -537,11 +747,23 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
     configToolbarBtn.type = 'button';
     configToolbarBtn.textContent = '⚙';
     configToolbarBtn.title = '自定义当前游戏按键';
-    configToolbarBtn.onclick = function (ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
+    var lastConfigToggleAt = 0;
+    function toggleConfigPanelStable(ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }
+      var now = Date.now();
+      // 手机浏览器一次轻点可能同时冒出 pointerup/touchend/click，避免打开后立刻被第二个事件关闭。
+      if (now - lastConfigToggleAt < 700) return;
+      lastConfigToggleAt = now;
       openConfigPanel();
-    };
+    }
+    function guardConfigToolbarTouch(ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); }
+    }
+    configToolbarBtn.onclick = toggleConfigPanelStable;
+    configToolbarBtn.addEventListener('pointerup', toggleConfigPanelStable, { passive: false });
+    configToolbarBtn.addEventListener('touchend', toggleConfigPanelStable, { passive: false });
+    configToolbarBtn.addEventListener('pointerdown', guardConfigToolbarTouch, { passive: false });
+    configToolbarBtn.addEventListener('touchstart', guardConfigToolbarTouch, { passive: false });
     ['contextmenu','selectstart','dragstart'].forEach(function (name) {
       configToolbarBtn.addEventListener(name, function (ev) { ev.preventDefault(); ev.stopPropagation(); return false; }, { passive: false });
     });
@@ -560,21 +782,31 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
     var mode = document.createElement('button');
     mode.type = 'button';
     mode.className = 'fg-vkey fg-vkey-mid';
-    mode.textContent = effectiveMoveMode() === 'wasd' ? 'WASD' : (moveMode === 'both' ? '双向' : (moveMode === 'wasd' ? 'WASD' : '方向'));
-    mode.title = '切换方向键/WASD';
-    mode.onclick = function (ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
+    mode.setAttribute('data-fg-move-mode-label', '1');
+    mode.textContent = moveModeLabel(effectiveMoveMode());
+    mode.title = '移动模式：' + moveModeLabel(effectiveMoveMode()) + '（点击切换）';
+    var lastMoveModeToggleAt = 0;
+    function cycleMoveMode(ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var now = Date.now();
+      if (now - lastMoveModeToggleAt < 300) return;
+      lastMoveModeToggleAt = now;
       releaseAll();
-      moveMode = moveMode === 'both' ? 'arrows' : (moveMode === 'arrows' ? 'wasd' : 'both');
-      localStorage.setItem('fg-vkeys-move-mode', moveMode);
-      mode.textContent = effectiveMoveMode() === 'wasd' ? 'WASD' : (moveMode === 'both' ? '双向' : (moveMode === 'wasd' ? 'WASD' : '方向'));
-    };
+      var cur = effectiveMoveMode();
+      var next = cur === 'both' ? 'wasd' : (cur === 'wasd' ? 'arrows' : 'both');
+      saveGameMoveMode(next);
+    }
+    mode.onclick = cycleMoveMode;
+    mode.addEventListener('pointerup', cycleMoveMode, { passive: false });
+    mode.addEventListener('touchend', cycleMoveMode, { passive: false });
     dpad.appendChild(mode);
 
     var actions = document.createElement('div');
     actions.className = 'fg-vkey-panel fg-vkey-actions';
     ACTION_SLOTS.forEach(function (slot) { actions.appendChild(makeActionBtn(slot)); });
+    COMBO_SLOTS.forEach(function (slot) { actions.appendChild(makeComboBtn(slot)); });
+    actions.appendChild(makeComboToggleBtn());
+    setComboExpanded(false);
 
     root.appendChild(dpad);
     root.appendChild(actions);
@@ -593,6 +825,7 @@ html.fg-vkey-suppress-callout,body.fg-vkey-suppress-callout,body.fg-vkey-suppres
         var t = ev.target;
         var inVkey = false;
         try { inVkey = !!(t && t.closest && t.closest('#fg-vkey-root,#fg-vkey-toggle,#fg-vkey-config-toggle,#fg-vkey-config-panel')); } catch (_) {}
+        if (isInsideConfigPanel(t)) return;
         if (inVkey) suppressBrowserMenu(1600);
         if (shouldSuppressBrowserMenu() && inVkey) globalSuppressHandler(ev, false);
       }, { capture: true, passive: false });
